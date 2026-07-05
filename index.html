@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosistemul Partenerilor DSU</title>
+    <meta name="description" content="Vizualizare interactivă a rețelei de parteneriate DSU – Departamentul pentru Situații de Urgență din România">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta property="og:title" content="Ecosistemul Partenerilor DSU">
+    <meta property="og:description" content="Hartă interactivă a rețelei de parteneriate și statistici ale Departamentului pentru Situații de Urgență din România">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://big-data-edu.github.io/DSU-main/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://big-data-edu.github.io/DSU-main/og-image.png">
+    <link rel="icon" type="image/png" href="logos/dsu.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    <link rel="stylesheet" href="css/app.css?v=7">
+</head>
+<body>
+    <!-- ====== NAVBAR ====== -->
+    <header id="app-header">
+        <div class="header-left">
+            <a href="https://www.dsu.mai.gov.ro/" target="_blank" class="header-logo-link">
+                <img src="logos/dsu.png" alt="DSU" class="header-logo-img">
+            </a>
+            <span class="header-brand">Ecosistemul partenerilor DSU</span>
+        </div>
+
+        <nav id="main-nav">
+            <a class="nav-link active" data-page="network">Rețea parteneri</a>
+            <a class="nav-link" data-page="network2">Rețea operațională</a>
+            <a class="nav-link" data-page="statistics">Statistici</a>
+            <a class="nav-link" data-page="about">Despre proiect</a>
+        </nav>
+
+        <div class="header-right">
+            <button id="theme-toggle" class="header-info-btn" aria-label="Schimbă tema" title="Schimbă tema">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <button id="info-btn" class="header-info-btn" aria-label="Despre platformă" title="Ghid &amp; glosar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
+            <div class="header-partner-logos">
+                <a href="https://www.uvt.ro/" target="_blank"><img src="logos/uvt.png" alt="UVT" class="logo-dark"><img src="logos/uvt-color.png" alt="UVT" class="logo-light"></a>
+                <a href="https://connectm.uvt.ro/" target="_blank"><img src="logos/fablab-white.png" alt="Social Fabrics Research Lab" class="logo-dark"><img src="logos/fablab-color.png" alt="Social Fabrics Research Lab" class="logo-light"></a>
+            </div>
+            <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Meniu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ====== MOBILE NAV DROPDOWN ====== -->
+    <div id="mobile-nav-dropdown" class="mobile-nav-dropdown hidden">
+        <a class="mobile-nav-link active" data-page="network">Rețea parteneri</a>
+        <a class="mobile-nav-link" data-page="network2">Rețea operațională</a>
+        <a class="mobile-nav-link" data-page="statistics">Statistici</a>
+        <a class="mobile-nav-link" data-page="about">Despre proiect</a>
+    </div>
+
+    <!-- ====== FILTER BAR (network page only) ====== -->
+    <div id="filter-bar">
+        <div class="fb-inner">
+            <!-- Help button (inserted before search) -->
+            <div id="nav-help-btn-container"><!-- Populated dynamically by network.js --></div>
+
+            <!-- Search -->
+            <div class="fb-search">
+                <svg class="fb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="search-input" placeholder="Caută partener..." autocomplete="off">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Entity type dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="entity-dropdown-btn">
+                    Tip organizație
+                    <span class="fb-dropdown-count" id="entity-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="entity-panel">
+                    <div id="entity-filters"></div>
+                </div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Domain dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="domain-dropdown-btn">
+                    Domenii
+                    <span class="fb-dropdown-count" id="domain-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="domain-panel">
+                    <div class="fb-panel-header">
+                        <button id="select-all-domains" class="fb-panel-btn">Selectează tot</button>
+                        <button id="select-no-domains" class="fb-panel-btn">Deselectează tot</button>
+                    </div>
+                    <div id="domain-filters"></div>
+                </div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Special filter toggles (replaces the old "Alte filtre" dropdown) -->
+            <button class="fb-toggle" id="special-strategic-btn" title="Parteneri cu care DSU are protocoale extinse de colaborare">
+                <span class="filter-icon">&#9733;</span>
+                Strategici
+                <span class="fb-toggle-count" id="strategic-count">0</span>
+            </button>
+            <button class="fb-toggle" id="special-ukraine-btn" title="Parteneri implicați în gestionarea crizei din Ucraina">
+                <span class="filter-icon-ua">UA</span>
+                Ucraina
+                <span class="fb-toggle-count" id="ukraine-count">0</span>
+            </button>
+
+            <!-- Mobile filter toggle -->
+            <button id="mobile-filter-toggle" class="fb-mobile-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                Filtre
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile filter panel (slides down) -->
+    <div id="mobile-filter-panel" class="mobile-filter-panel hidden">
+        <div id="mobile-entity-filters" class="mfp-section"></div>
+        <div id="mobile-domain-filters" class="mfp-section"></div>
+        <div id="mobile-special-filters" class="mfp-section"></div>
+    </div>
+
+    <!-- ====== FILTER BAR 2 (operational network page only) ====== -->
+    <div id="filter-bar2" style="display:none">
+        <div class="fb-inner">
+            <!-- Help button (populated by network2.js) -->
+            <div id="net2-help-btn-container"></div>
+
+            <!-- Search -->
+            <div class="fb-search">
+                <svg class="fb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="net2-search" placeholder="Caută ONG..." autocomplete="off">
+                <div id="net2-search-results" class="search-results hidden"></div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Context (crisis) dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="net2-context-btn">
+                    Context (criză)
+                    <span class="fb-dropdown-count" id="net2-context-count"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="net2-context-panel">
+                    <div id="net2-context-filters"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== APP SHELL ====== -->
+    <div id="app-container">
+        <main id="main-content">
+            <!-- ====== NETWORK PAGE ====== -->
+            <div id="page-network" class="page active">
+                <!-- Stats Overlay (bottom-right, no legend) -->
+                <div id="stats-overlay">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-partners">0</div>
+                        <div class="stat-label">Parteneri</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-domains">0</div>
+                        <div class="stat-label">Domenii</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-connections">0</div>
+                        <div class="stat-label">Conexiuni</div>
+                    </div>
+                </div>
+
+                <!-- Graph Container -->
+                <div id="graph-container">
+                    <svg id="network-svg"></svg>
+                </div>
+
+                <!-- Partner Detail Card (floating bottom) -->
+                <div id="partner-detail" class="hidden">
+                    <button id="close-detail" class="close-detail-btn">&times;</button>
+                    <div id="detail-content"></div>
+                </div>
+
+                <!-- Tooltip (follows cursor) -->
+                <div id="tooltip" class="hidden"></div>
+
+                <!-- Floating panels (bottom-left): legend + network analysis -->
+                <div class="graph-fabs">
+                <div class="fab-wrap" id="floating-legend">
+                    <button id="legend-toggle" class="legend-toggle-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="6" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="6" x2="21" y2="6"/><circle cx="4" cy="12" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="12" x2="21" y2="12"/><circle cx="4" cy="18" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="18" x2="21" y2="18"/></svg>
+                        Legendă
+                    </button>
+                    <div id="legend-panel" class="legend-panel hidden">
+                        <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span><span>Universitate</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span><span>ONG</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span><span>Instituție de stat</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span><span>Companie privată</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#ec4899"></span><span>Media</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#14b8a6"></span><span>Org. profesională</span></div>
+                        <div class="legend-item"><span class="legend-diamond"></span><span>Domeniu de activitate</span></div>
+                    </div>
+                </div>
+                <div class="fab-wrap" id="floating-analysis">
+                    <button id="analysis-toggle" class="legend-toggle-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Analiză
+                    </button>
+                    <div id="analysis-panel" class="legend-panel analysis-panel hidden"><!-- Populated by network.js --></div>
+                </div>
+                </div>
+            </div>
+
+            <!-- ====== NETWORK 2 PAGE (ONG <-> ISU) ====== -->
+            <div id="page-network2" class="page">
+                <div id="graph-container2">
+                    <svg id="network2-svg"></svg>
+
+                    <!-- Toolbar (reset zoom + export) -->
+                    <div class="graph-toolbar" id="net2-toolbar">
+                        <button class="graph-toolbar-btn" id="net2-reset-btn" title="Resetare zoom">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        </button>
+                        <button class="graph-toolbar-btn" id="net2-export-png-btn" title="Descarcă imagine (PNG)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        </button>
+                        <button class="graph-toolbar-btn" id="net2-export-btn" title="Descarcă vector (SVG)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Stats overlay -->
+                    <div id="stats-overlay2">
+                        <div class="stat-card"><div class="stat-value" id="n2-stat-ong">0</div><div class="stat-label">ONG-uri</div></div>
+                        <div class="stat-card"><div class="stat-value" id="n2-stat-isu">0</div><div class="stat-label">ISU județene</div></div>
+                        <div class="stat-card"><div class="stat-value" id="n2-stat-colab">0</div><div class="stat-label">Colaborări</div></div>
+                        <div class="stat-card"><div class="stat-value" id="n2-stat-conn">0</div><div class="stat-label">Conexiuni</div></div>
+                    </div>
+
+                    <!-- Detail card -->
+                    <div id="partner-detail2" class="hidden">
+                        <button id="close-detail2" class="close-detail-btn">&times;</button>
+                        <div id="detail-content2"></div>
+                    </div>
+
+                    <!-- Tooltip -->
+                    <div id="tooltip2" class="hidden"></div>
+
+                    <!-- Floating panels (bottom-left): legend + network analysis -->
+                    <div class="graph-fabs">
+                    <div class="fab-wrap" id="floating-legend2">
+                        <button id="legend-toggle2" class="legend-toggle-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="6" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="6" x2="21" y2="6"/><circle cx="4" cy="12" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="12" x2="21" y2="12"/><circle cx="4" cy="18" r="1.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="18" x2="21" y2="18"/></svg>
+                            Legendă
+                        </button>
+                        <div id="legend-panel2" class="legend-panel hidden"></div>
+                    </div>
+                    <div class="fab-wrap" id="floating-analysis2">
+                        <button id="analysis-toggle2" class="legend-toggle-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            Analiză
+                        </button>
+                        <div id="analysis-panel2" class="legend-panel analysis-panel hidden"><!-- Populated by network2.js --></div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== STATISTICS PAGE ====== -->
+            <div id="page-statistics" class="page">
+                <div class="page-padded">
+                    <h2 class="page-title">DSU în cifre</h2>
+                    <div class="data-notice">
+                        Date în curs de prelucrare. Ultimele date disponibile sunt din 2024.
+                    </div>
+                    <div class="stats-tabs">
+                        <button class="stats-tab active" data-tab="operational">Operațional și urgențe</button>
+                        <button class="stats-tab" data-tab="medical">Medical și aviație</button>
+                        <button class="stats-tab" data-tab="prevention">Prevenire și parteneri</button>
+                        <button class="stats-tab" data-tab="advanced">Analize avansate</button>
+                    </div>
+                    <div id="tab-operational" class="tab-content active"></div>
+                    <div id="tab-medical" class="tab-content"></div>
+                    <div id="tab-prevention" class="tab-content"></div>
+                    <div id="tab-advanced" class="tab-content"></div>
+                </div>
+            </div>
+
+            <!-- ====== ABOUT PAGE ====== -->
+            <div id="page-about" class="page">
+                <div class="page-padded" id="about-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ====== ONBOARDING / WELCOME MODAL ====== -->
+    <div id="onboarding-overlay" class="onboarding-overlay hidden">
+        <div class="onboarding-modal" role="dialog" aria-modal="true" aria-label="Ghid de utilizare">
+            <button id="onboarding-close" class="onboarding-close" title="Închide">&times;</button>
+            <div class="onboarding-eyebrow">Bun venit</div>
+            <h2 class="onboarding-title">Ecosistemul partenerilor DSU</h2>
+            <p class="onboarding-lead">
+                O platformă interactivă care arată cu cine colaborează <strong>Departamentul pentru
+                Situații de Urgență (DSU)</strong> și ce face acesta, în cifre. Explorează cele
+                trei secțiuni:
+            </p>
+
+            <div class="onboarding-cards">
+                <div class="onboarding-card" data-page="network">
+                    <div class="onboarding-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    </div>
+                    <div class="onboarding-card-title">Rețea parteneri</div>
+                    <div class="onboarding-card-text">Parteneriatele formale ale DSU cu organizații (ONG-uri, universități, instituții, companii), grupate pe domenii de activitate.</div>
+                </div>
+                <div class="onboarding-card" data-page="network2">
+                    <div class="onboarding-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="onboarding-card-title">Rețea operațională</div>
+                    <div class="onboarding-card-text">Colaborările concrete dintre ONG-uri și Inspectoratele Județene pentru Situații de Urgență (ISU) în pandemie și în criza refugiaților din Ucraina.</div>
+                </div>
+                <div class="onboarding-card" data-page="statistics">
+                    <div class="onboarding-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <div class="onboarding-card-title">Statistici</div>
+                    <div class="onboarding-card-text">DSU în cifre: intervenții, apeluri 112, timpi de răspuns, activitate medicală și aeriană, prevenire.</div>
+                </div>
+            </div>
+
+            <div class="onboarding-glossary">
+                <div class="onboarding-glossary-title">Glosar rapid</div>
+                <ul>
+                    <li><strong>DSU</strong> — Departamentul pentru Situații de Urgență (coordonează intervenția în urgențe la nivel național)</li>
+                    <li><strong>ISU</strong> — Inspectoratul pentru Situații de Urgență (structura județeană: pompieri, SMURD)</li>
+                    <li><strong>SMURD</strong> — Serviciul Mobil de Urgență, Reanimare și Descarcerare</li>
+                    <li><strong>CNSU</strong> — Comitetul Național pentru Situații de Urgență (ia decizii la nivel național)</li>
+                    <li><strong>SNMSU</strong> — Sistemul Național de Management al Situațiilor de Urgență</li>
+                </ul>
+            </div>
+
+            <button id="onboarding-start" class="onboarding-start">Hai să explorăm</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Se încarcă datele...</div>
+        </div>
+    </div>
+
+    <!-- Single module entry point — app.js imports the rest exactly once.
+         (Listing every module here as well would instantiate them twice,
+         because the import specifiers would not match these URLs.) -->
+    <script type="module" src="js/app.js?v=7"></script>
+</body>
+</html>
